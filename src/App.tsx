@@ -92,6 +92,7 @@ export function App() {
   const [waybackReleases, setWaybackReleases] = useState<WaybackRelease[]>([]);
   const [localWaybackChanges, setLocalWaybackChanges] = useState<WaybackRelease[] | null>(null);
   const [loadingChanges, setLoadingChanges] = useState(false);
+  const changesReqRef = useRef(0);
 
   const [historicalMeta, setHistoricalMeta] = useState<WaybackMetadata | null>(null);
   const [currentMeta, setCurrentMeta] = useState<WaybackMetadata | null>(null);
@@ -173,12 +174,13 @@ export function App() {
   // Auto-detect local Wayback changes when switching to 'wayback-local' track
   useEffect(() => {
     if (timelapseTrack !== 'wayback-local') return;
-    if (localWaybackChanges || loadingChanges) return;
+    if (localWaybackChanges) return;
+    const reqId = ++changesReqRef.current;
     let cancelled = false;
     setLoadingChanges(true);
     fetchWaybackChanges(center[0], center[1], zoom)
       .then((res) => {
-        if (cancelled) return;
+        if (cancelled || reqId !== changesReqRef.current) return;
         setLocalWaybackChanges(res.changes);
         if (res.changes.length > 0) {
           setHistoricalSpec(waybackReleaseToSpec(res.changes[0]));
@@ -188,12 +190,14 @@ export function App() {
         // Keep fallback frame
       })
       .finally(() => {
-        if (!cancelled) setLoadingChanges(false);
+        if (reqId === changesReqRef.current) {
+          setLoadingChanges(false);
+        }
       });
     return () => {
       cancelled = true;
     };
-  }, [timelapseTrack, localWaybackChanges, loadingChanges, center, zoom]);
+  }, [timelapseTrack, localWaybackChanges, center, zoom]);
 
   // Sync URL query params
   useEffect(() => {
@@ -338,14 +342,19 @@ export function App() {
   }, []);
 
   const handleDetectLocalWayback = async () => {
+    const reqId = ++changesReqRef.current;
     setLoadingChanges(true);
     try {
       const res = await fetchWaybackChanges(center[0], center[1], zoom);
-      setLocalWaybackChanges(res.changes);
+      if (reqId === changesReqRef.current) {
+        setLocalWaybackChanges(res.changes);
+      }
     } catch {
       // Ignore if endpoint is temporarily slow
     } finally {
-      setLoadingChanges(false);
+      if (reqId === changesReqRef.current) {
+        setLoadingChanges(false);
+      }
     }
   };
 
