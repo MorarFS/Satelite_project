@@ -62,9 +62,7 @@ function getInitialFromUrl() {
 export function App() {
   const initRef = useRef(getInitialFromUrl());
 
-  const [drawerOpen, setDrawerOpen] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth >= 1024 : true
-  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchActive, setSearchActive] = useState(false);
   const [directoryOpen, setDirectoryOpen] = useState(false);
 
@@ -312,6 +310,10 @@ export function App() {
     []
   );
 
+  const handleMapClick = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
+
   const handleSelectLocation = useCallback((lat: number, lon: number, targetZoom: number) => {
     setCenter([lat, lon]);
     setZoom(targetZoom);
@@ -414,7 +416,7 @@ export function App() {
     activeSequence.length > 0 ? Math.round((framePosition / activeSequence.length) * 100) : 100;
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-[#090d12] text-slate-100 select-none">
+    <div className="relative w-screen h-screen overflow-hidden bg-[#090d12] text-slate-100">
       {/* Fullscreen Map Comparator */}
       <MapComparator
         historicalSpec={historicalSpec}
@@ -436,6 +438,7 @@ export function App() {
         flyTrigger={flyTrigger}
         onViewportChange={handleViewportChange}
         onCursorCoords={setCursorCoords}
+        onMapClick={handleMapClick}
         highlightedFootprint={highlightedFootprint}
         onHistoricalLoadStateChange={handleHistoricalLoadState}
         onHistoricalFrameReady={handleHistoricalFrameReady}
@@ -470,21 +473,21 @@ export function App() {
 
       {/* Cinematic Timelapse HUD Overlay */}
       {isPlaying && (
-        <div className="pointer-events-none fixed top-[112px] left-1/2 -translate-x-1/2 z-[740] bg-[#0c1119]/90 border border-amber-400/45 backdrop-blur-xl rounded-2xl px-4 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.6)] min-w-[240px] max-w-[90vw]">
+        <div className="pointer-events-none fixed top-[7rem] left-1/2 -translate-x-1/2 z-[740] obs-panel border-amber-400/40 rounded-2xl px-4 py-2.5 min-w-[15.5rem] max-w-[90vw]">
           <div className="flex items-baseline justify-between gap-4">
-            <div className="font-mono text-lg sm:text-xl font-bold text-amber-300 tracking-tight">
+            <div className="font-[var(--font-display)] text-lg sm:text-xl font-bold tabular-nums text-amber-300 tracking-tight">
               {historicalSpec.shortLabel}
             </div>
-            <div className="text-[11px] font-mono text-slate-300">
+            <div className="text-[0.6875rem] font-mono tabular-nums text-slate-300">
               {activeTrackMeta?.shortLabel} · {framePosition}/{activeSequence.length}
             </div>
           </div>
-          <div className="text-[10px] text-slate-300 truncate mt-0.5">
+          <div className="text-xs text-slate-300 truncate mt-0.5 leading-snug">
             {historicalSpec.sensor}
           </div>
-          <div className="mt-1.5 h-1 w-full rounded-full bg-white/10 overflow-hidden">
+          <div className="mt-2 h-1 w-full rounded-full bg-white/10 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-amber-400 to-sky-400 transition-[width] duration-300 ease-out"
+              className="h-full obs-progress-fill transition-[width] duration-300 ease-out"
               style={{ width: `${progressPct}%` }}
             />
           </div>
@@ -494,6 +497,7 @@ export function App() {
       {/* Left Observatory Drawer */}
       <LeftDrawer
         open={drawerOpen && !searchActive}
+        onClose={() => setDrawerOpen(false)}
         historicalSpec={historicalSpec}
         currentSpec={currentSpec}
         spectralMode={spectralMode}
@@ -515,25 +519,26 @@ export function App() {
 
       {/* Active Landmark Story Callout */}
       {activeLandmark && (
-        <div className="pointer-events-auto fixed top-[74px] right-14 z-[650] max-w-xs bg-[#0c1119]/92 border border-amber-500/35 backdrop-blur-xl rounded-2xl p-3 shadow-2xl hidden md:block">
+        <div className="pointer-events-auto fixed top-[4.625rem] right-14 z-[650] max-w-xs obs-panel border-amber-500/35 rounded-2xl p-3.5 hidden md:block">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300">
+              <div className="text-[0.6875rem] font-mono uppercase tracking-wider text-amber-300 tabular-nums">
                 {activeLandmark.spanLabel} · {activeLandmark.region}
               </div>
-              <div className="text-xs font-semibold text-white mt-0.5">
+              <div className="font-[var(--font-display)] text-[0.8125rem] font-semibold text-white mt-0.5 leading-snug">
                 {activeLandmark.name}
               </div>
             </div>
             <button
               type="button"
+              aria-label="Închide detaliile reperului"
               onClick={() => setActiveLandmark(null)}
-              className="text-slate-400 hover:text-white p-0.5"
+              className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-          <p className="text-[11px] text-slate-300 mt-1.5 leading-relaxed">
+          <p className="text-xs text-slate-200/90 mt-1.5 leading-[1.45] text-pretty">
             {activeLandmark.summary}
           </p>
         </div>

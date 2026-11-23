@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Calendar,
+  ChevronUp,
   Compass,
   Database,
   Globe2,
@@ -35,6 +36,7 @@ type DrawerTab = 'sources' | 'scenes' | 'landmarks';
 
 interface LeftDrawerProps {
   open: boolean;
+  onClose: () => void;
   historicalSpec: ImageryLayerSpec;
   currentSpec: ImageryLayerSpec;
   spectralMode: SpectralMode;
@@ -62,6 +64,7 @@ const ERA_ORDER: Array<{ id: EraGroup; label: string }> = [
 
 export const LeftDrawer: React.FC<LeftDrawerProps> = ({
   open,
+  onClose,
   historicalSpec,
   currentSpec,
   spectralMode,
@@ -375,20 +378,29 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
   return (
     <aside
+      data-open={open}
       aria-hidden={!open}
-      style={{
-        clipPath: open
-          ? 'inset(0 0 0% 0 round 16px)'
-          : 'inset(0 0 100% 0 round 16px)',
-      }}
-      className={`fixed top-[74px] left-3 bottom-[118px] w-[372px] max-w-[92vw] z-[750] flex flex-col bg-[#0c1119]/92 border border-white/12 backdrop-blur-xl rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden transition-[clip-path,transform,opacity] duration-300 ease-out ${
-        open
-          ? 'pointer-events-auto translate-y-0 opacity-100'
-          : 'pointer-events-none -translate-y-3.5 opacity-0'
-      }`}
+      className="fixed top-[4.625rem] left-3 bottom-[7.375rem] w-[23.5rem] max-w-[92vw] z-[750] flex flex-col obs-panel obs-drawer rounded-[1.125rem] overflow-hidden"
     >
+      {/* Antet compact panou */}
+      <div className="select-none flex items-center justify-between px-3.5 py-2 border-b border-white/10 bg-black/35 shrink-0">
+        <span className="font-[var(--font-display)] text-[0.8125rem] font-semibold tracking-[-0.01em] text-slate-100">
+          Observator & Arhive
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          title="Restrânge panoul"
+          aria-label="Restrânge panoul"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[0.6875rem] font-medium text-slate-300 hover:text-white hover:bg-white/10 border border-white/10 transition-colors focus-visible:outline-2 focus-visible:outline-amber-400"
+        >
+          <ChevronUp className="w-3.5 h-3.5" />
+          <span>Ascunde</span>
+        </button>
+      </div>
+
       {/* File */}
-      <div className="grid grid-cols-3 border-b border-white/10 bg-black/25 p-1 gap-1 shrink-0">
+      <div className="select-none grid grid-cols-3 border-b border-white/10 bg-black/25 p-1.5 gap-1 shrink-0">
         {[
           { id: 'sources' as const, label: 'Arhive', icon: <History className="w-3.5 h-3.5" /> },
           { id: 'scenes' as const, label: 'Scene Live', icon: <Database className="w-3.5 h-3.5" /> },
@@ -398,10 +410,10 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
             key={t.id}
             type="button"
             onClick={() => setActiveTab(t.id)}
-            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-colors ${
+            className={`flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium transition-all focus-visible:outline-2 focus-visible:outline-amber-400 ${
               activeTab === t.id
-                ? 'bg-white/12 text-white border border-white/15'
-                : 'text-slate-400 hover:text-slate-200 border border-transparent'
+                ? 'obs-active-gradient text-white border border-white/20 shadow-sm'
+                : 'text-slate-300/85 hover:text-white hover:bg-white/6 border border-transparent'
             }`}
           >
             {t.icon}
@@ -417,25 +429,26 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
             {/* Referința actuală (Dreapta) */}
             <section className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-sky-400">
+                <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-sky-300">
                   Partea Dreaptă · Harta Satelitară Actuală
                 </span>
               </div>
               <select
+                aria-label="Harta Satelitară Actuală"
                 value={currentSpec.id}
                 onChange={(e) => {
                   const found = CURRENT_PRESETS.find((c) => c.id === e.target.value);
                   if (found) onSelectCurrent(found);
                 }}
-                className="w-full px-3 py-2 rounded-xl bg-white/6 border border-sky-500/30 text-xs text-slate-100 focus:outline-none focus:border-sky-400"
+                className="obs-select w-full border-sky-400/35"
               >
                 {CURRENT_PRESETS.map((c) => (
-                  <option key={c.id} value={c.id} className="bg-[#0d131d]">
+                  <option key={c.id} value={c.id}>
                     {c.label}
                   </option>
                 ))}
                 {!CURRENT_PRESETS.some((c) => c.id === currentSpec.id) && (
-                  <option value={currentSpec.id} className="bg-[#0d131d]">
+                  <option value={currentSpec.id}>
                     {currentSpec.label}
                   </option>
                 )}
@@ -444,10 +457,10 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
             {/* Selector benzi spectrale */}
             {historicalSpec.supportsSpectral && historicalSpec.availableSpectral && (
-              <section className="p-2.5 rounded-xl bg-amber-500/8 border border-amber-500/25 space-y-2">
+              <section className="p-3 rounded-xl bg-amber-500/8 border border-amber-500/25 space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wider text-amber-300 flex items-center gap-1.5">
-                    <Sparkles className="w-3 h-3" />
+                  <span className="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-amber-300 flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5" />
                     Combinație Benzi Spectrale
                   </span>
                 </div>
@@ -461,14 +474,14 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                         type="button"
                         title={meta.description}
                         onClick={() => onSpectralModeChange(mode)}
-                        className={`px-2.5 py-1.5 rounded-lg text-left border transition-colors ${
+                        className={`px-2.5 py-2 rounded-lg text-left border transition-colors ${
                           active
                             ? 'bg-amber-500/25 border-amber-400/70 text-amber-100'
-                            : 'bg-black/30 border-white/10 text-slate-400 hover:text-slate-200'
+                            : 'bg-black/35 border-white/10 text-slate-300 hover:text-white hover:bg-white/6'
                         }`}
                       >
-                        <div className="text-[11px] font-semibold">{meta.short}</div>
-                        <div className="text-[10px] opacity-80 truncate">{meta.label}</div>
+                        <div className="text-xs font-semibold leading-snug">{meta.short}</div>
+                        <div className="text-[0.6875rem] opacity-85 truncate leading-snug">{meta.label}</div>
                       </button>
                     );
                   })}
@@ -478,7 +491,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
             {/* Catalog pe decenii */}
             <section className="space-y-3">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-amber-400">
+              <div className="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-amber-300">
                 Partea Stângă · Arhive Istorice (1972–2025)
               </div>
 
@@ -487,11 +500,11 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                 if (items.length === 0) return null;
                 return (
                   <div key={era.id} className="space-y-1.5">
-                    <div className="text-[11px] font-medium text-slate-400 flex items-center gap-1.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400/80" />
+                    <div className="text-xs font-medium text-slate-300 flex items-center gap-1.5 leading-snug">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400/90" />
                       <span>{era.label}</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {items.map((preset) => {
                         const active = historicalSpec.id === preset.id;
                         return (
@@ -504,19 +517,27 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                               }
                               onSelectHistorical(preset);
                             }}
-                            className={`w-full text-left px-2.5 py-2 rounded-xl border transition-all flex items-center justify-between gap-2 ${
+                            className={`relative w-full text-left px-3 py-2.5 rounded-xl border transition-all flex items-center justify-between gap-2.5 overflow-hidden ${
                               active
-                                ? 'bg-amber-500/18 border-amber-400/65 text-white shadow-[0_0_16px_rgba(245,158,11,0.12)]'
-                                : 'bg-white/4 border-white/8 text-slate-300 hover:bg-white/8 hover:border-white/15'
+                                ? 'bg-amber-500/18 border-amber-400/70 text-white shadow-[0_0_20px_rgba(245,158,11,0.14)]'
+                                : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/9 hover:border-white/18'
                             }`}
                           >
+                            {active && (
+                              <span
+                                aria-hidden="true"
+                                className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r-full bg-amber-400"
+                              />
+                            )}
                             <div className="min-w-0">
-                              <div className="text-xs font-medium truncate">{preset.label}</div>
-                              <div className="text-[10px] text-slate-400 truncate">
+                              <div className="text-[0.8125rem] font-medium truncate leading-snug">
+                                {preset.label}
+                              </div>
+                              <div className="text-[0.6875rem] text-slate-300/85 truncate leading-snug mt-0.5">
                                 {preset.sensor}
                               </div>
                             </div>
-                            <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-black/40 border border-white/10 text-amber-300">
+                            <span className="shrink-0 text-[0.6875rem] font-mono tabular-nums px-1.5 py-0.5 rounded-md bg-black/45 border border-white/12 text-amber-300">
                               {preset.resolutionLabel.replace(' / px', '')}
                             </span>
                           </button>
@@ -529,13 +550,13 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
             </section>
 
             {/* Detector schimbări locale Esri Wayback */}
-            <section className="p-3 rounded-xl bg-white/4 border border-white/10 space-y-2.5">
+            <section className="p-3 rounded-xl bg-white/5 border border-white/12 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <div className="text-xs font-semibold text-white">
+                  <div className="font-[var(--font-display)] text-[0.8125rem] font-semibold text-white leading-snug">
                     Esri Wayback Sub-metric ({waybackReleases.length || 199})
                   </div>
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-[0.6875rem] text-slate-300 leading-snug">
                     Ediții la 0,3–0,6 m (2014–2026)
                   </div>
                 </div>
@@ -543,26 +564,26 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                   type="button"
                   onClick={onDetectLocalWayback}
                   disabled={loadingChanges}
-                  className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/45 text-[11px] font-medium text-amber-200 flex items-center gap-1.5 disabled:opacity-60 transition-colors"
+                  className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-xs font-medium text-amber-100 flex items-center gap-1.5 disabled:opacity-60 transition-colors"
                 >
                   {loadingChanges ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <RefreshCw className="w-3 h-3" />
+                    <RefreshCw className="w-3.5 h-3.5" />
                   )}
                   <span>Schimbări Locale</span>
                 </button>
               </div>
 
               {localWaybackChanges && (
-                <div className="flex items-center justify-between text-[11px] text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded-lg px-2.5 py-1.5">
+                <div className="flex items-center justify-between text-xs text-emerald-200 bg-emerald-500/12 border border-emerald-500/30 rounded-lg px-2.5 py-1.5">
                   <span>
-                    S-au găsit <strong>{localWaybackChanges.length}</strong> capturi unice în centru
+                    S-au găsit <strong className="tabular-nums">{localWaybackChanges.length}</strong> capturi unice în centru
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowAllWayback((v) => !v)}
-                    className="underline text-slate-300 hover:text-white"
+                    className="underline text-slate-200 hover:text-white"
                   >
                     {showAllWayback ? 'Doar locale' : 'Arată toate'}
                   </button>
@@ -579,12 +600,14 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                       onClick={() => handleSelectWayback(rel)}
                       className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs border flex items-center justify-between transition-colors ${
                         active
-                          ? 'bg-amber-500/20 border-amber-400/60 text-white'
-                          : 'bg-black/25 border-white/6 text-slate-300 hover:bg-white/8'
+                          ? 'bg-amber-500/22 border-amber-400/65 text-white'
+                          : 'bg-black/30 border-white/8 text-slate-200 hover:bg-white/8'
                       }`}
                     >
-                      <span className="font-mono">{rel.date}</span>
-                      <span className="text-[10px] text-slate-400">#{rel.releaseNum}</span>
+                      <span className="font-mono tabular-nums">{rel.date}</span>
+                      <span className="text-[0.6875rem] font-mono tabular-nums text-slate-300">
+                        #{rel.releaseNum}
+                      </span>
                     </button>
                   );
                 })}
@@ -592,14 +615,14 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
             </section>
 
             {/* Constructor mozaic personalizat */}
-            <section className="p-3 rounded-xl bg-white/4 border border-white/10 space-y-2.5">
-              <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+            <section className="p-3 rounded-xl bg-white/5 border border-white/12 space-y-2.5">
+              <div className="font-[var(--font-display)] text-[0.8125rem] font-semibold text-white flex items-center gap-1.5">
                 <Layers className="w-3.5 h-3.5 text-amber-400" />
                 <span>Mozaic Personalizat România (1972–2026)</span>
               </div>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <label className="col-span-2 space-y-1">
-                  <span className="text-[10px] text-slate-400">Colecție</span>
+                  <span className="text-[0.6875rem] text-slate-300">Colecție</span>
                   <select
                     value={pcCollection}
                     onChange={(e) => {
@@ -619,7 +642,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                         setPcYearTo(2025);
                       }
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-slate-100"
+                    className="obs-select w-full"
                   >
                     <option value="landsat-c2-l1">Landsat 1–5 MSS (1972–2013, 60m)</option>
                     <option value="landsat-c2-l2">Landsat 4–9 L2 (1982–2026, 30m)</option>
@@ -628,30 +651,30 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                   </select>
                 </label>
                 <label className="space-y-1">
-                  <span className="text-[10px] text-slate-400">Din anul</span>
+                  <span className="text-[0.6875rem] text-slate-300">Din anul</span>
                   <input
                     type="number"
                     min={1972}
                     max={2026}
                     value={pcYearFrom}
                     onChange={(e) => setPcYearFrom(Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-slate-100 font-mono"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#101724] border border-white/14 text-slate-100 font-mono tabular-nums focus:outline-none focus:border-amber-400"
                   />
                 </label>
                 <label className="space-y-1">
-                  <span className="text-[10px] text-slate-400">Până în anul</span>
+                  <span className="text-[0.6875rem] text-slate-300">Până în anul</span>
                   <input
                     type="number"
                     min={1972}
                     max={2026}
                     value={pcYearTo}
                     onChange={(e) => setPcYearTo(Number(e.target.value))}
-                    className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-slate-100 font-mono"
+                    className="w-full px-2.5 py-1.5 rounded-lg bg-[#101724] border border-white/14 text-slate-100 font-mono tabular-nums focus:outline-none focus:border-amber-400"
                   />
                 </label>
               </div>
-              <div className="flex items-center justify-between gap-2 text-[11px] text-slate-300">
-                <span>Acoperire nori max.: {pcCloud}%</span>
+              <div className="flex items-center justify-between gap-2 text-xs text-slate-200">
+                <span className="tabular-nums">Acoperire nori max.: {pcCloud}%</span>
                 <input
                   type="range"
                   min={5}
@@ -659,28 +682,29 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                   step={5}
                   value={pcCloud}
                   onChange={(e) => setPcCloud(Number(e.target.value))}
-                  className="w-28 accent-amber-400"
+                  className="w-28 accent-amber-400 cursor-pointer"
                 />
               </div>
               <button
                 type="button"
                 onClick={handleBuildCustomMosaic}
-                className="w-full py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-xs font-medium text-amber-200 transition-colors"
+                className="w-full py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-xs font-semibold text-amber-100 transition-colors"
               >
                 Generează Mozaic Național
               </button>
             </section>
 
             {/* Selector dată exactă NASA GIBS */}
-            <section className="p-3 rounded-xl bg-white/4 border border-white/10 space-y-2.5">
-              <div className="text-xs font-semibold text-white flex items-center gap-1.5">
+            <section className="p-3 rounded-xl bg-white/5 border border-white/12 space-y-2.5">
+              <div className="font-[var(--font-display)] text-[0.8125rem] font-semibold text-white flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5 text-amber-400" />
                 <span>Satelit Zilnic NASA GIBS (2000–2026)</span>
               </div>
               <select
+                aria-label="Senzor NASA GIBS"
                 value={gibsSensor}
                 onChange={(e) => setGibsSensor(e.target.value)}
-                className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-xs text-slate-100"
+                className="obs-select w-full"
               >
                 <option value="MODIS_Terra_CorrectedReflectance_TrueColor">
                   MODIS Terra Zilnic (24 feb. 2000 → Prezent, 250m)
@@ -702,12 +726,12 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                   max="2026-11-23"
                   value={gibsDate}
                   onChange={(e) => setGibsDate(e.target.value)}
-                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-xs text-slate-100 font-mono"
+                  className="flex-1 px-2.5 py-1.5 rounded-lg bg-[#101724] border border-white/14 text-xs text-slate-100 font-mono tabular-nums focus:outline-none focus:border-amber-400"
                 />
                 <button
                   type="button"
                   onClick={handleLoadGibs}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/45 text-xs font-medium text-amber-200"
+                  className="px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-xs font-medium text-amber-100 transition-colors"
                 >
                   Încarcă Data
                 </button>
@@ -715,11 +739,11 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
             </section>
 
             {/* Context topografic pre-satelit */}
-            <section className="p-3 rounded-xl bg-white/3 border border-white/8 space-y-2">
-              <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+            <section className="p-3 rounded-xl bg-white/4 border border-white/10 space-y-2">
+              <div className="text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-slate-300">
                 Context Topografic Pre-Satelitar (geo-spatial.org)
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {REFERENCE_PRE_SATELLITE_LAYERS.map((refLayer) => {
                   const active = historicalSpec.id === refLayer.id;
                   return (
@@ -727,10 +751,10 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                       key={refLayer.id}
                       type="button"
                       onClick={() => onSelectHistorical(refLayer)}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs border transition-colors ${
+                      className={`w-full text-left px-3 py-2 rounded-lg text-xs border transition-colors ${
                         active
-                          ? 'bg-amber-500/20 border-amber-400/60 text-white'
-                          : 'bg-black/25 border-white/8 text-slate-300 hover:bg-white/8'
+                          ? 'bg-amber-500/22 border-amber-400/65 text-white'
+                          : 'bg-black/30 border-white/10 text-slate-200 hover:bg-white/8'
                       }`}
                     >
                       {refLayer.label}
@@ -744,18 +768,20 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
         {activeTab === 'scenes' && (
           <div className="space-y-3">
-            <div className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-200/90 leading-[1.45] text-pretty">
               Caută treceri satelitare individuale din catalogul Microsoft Planetary Computer STAC
               și OpenAerialMap România. Treceți cu mouse-ul peste un rezultat pentru a-i vedea amprenta pe hartă.
-            </div>
+            </p>
 
-            <div className="p-3 rounded-xl bg-white/4 border border-white/10 space-y-2.5">
+            <div className="p-3 rounded-xl bg-white/5 border border-white/12 space-y-2.5">
               <label className="block space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase tracking-wider">Colecție Arhivă</span>
+                <span className="text-[0.6875rem] text-slate-300 uppercase tracking-[0.06em] font-semibold">
+                  Colecție Arhivă
+                </span>
                 <select
                   value={sceneDataset}
                   onChange={(e) => handleDatasetPresetSwitch(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-black/45 border border-white/12 text-xs text-slate-100"
+                  className="obs-select w-full"
                 >
                   <option value="landsat-c2-l1">Landsat 1–5 MSS (1972–2013, 60m)</option>
                   <option value="landsat-c2-l2">Landsat 4–9 L2 (1982–2026, 30m)</option>
@@ -770,10 +796,10 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setSceneScope('viewport')}
-                  className={`py-1.5 rounded-lg text-xs font-medium border ${
+                  className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                     sceneScope === 'viewport'
-                      ? 'bg-amber-500/20 border-amber-400/60 text-amber-200'
-                      : 'bg-black/30 border-white/10 text-slate-400'
+                      ? 'bg-amber-500/22 border-amber-400/65 text-amber-100'
+                      : 'bg-black/35 border-white/12 text-slate-300 hover:text-white'
                   }`}
                 >
                   Zona Vizibilă
@@ -781,10 +807,10 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setSceneScope('romania')}
-                  className={`py-1.5 rounded-lg text-xs font-medium border ${
+                  className={`py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                     sceneScope === 'romania'
-                      ? 'bg-amber-500/20 border-amber-400/60 text-amber-200'
-                      : 'bg-black/30 border-white/10 text-slate-400'
+                      ? 'bg-amber-500/22 border-amber-400/65 text-amber-100'
+                      : 'bg-black/35 border-white/12 text-slate-300 hover:text-white'
                   }`}
                 >
                   Toată România
@@ -795,31 +821,31 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                 <>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <label className="space-y-1">
-                      <span className="text-[10px] text-slate-400">Din anul</span>
+                      <span className="text-[0.6875rem] text-slate-300">Din anul</span>
                       <input
                         type="number"
                         min={1972}
                         max={2026}
                         value={sceneStartYear}
                         onChange={(e) => setSceneStartYear(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-slate-100 font-mono"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-[#101724] border border-white/14 text-slate-100 font-mono tabular-nums focus:outline-none focus:border-amber-400"
                       />
                     </label>
                     <label className="space-y-1">
-                      <span className="text-[10px] text-slate-400">Până în anul</span>
+                      <span className="text-[0.6875rem] text-slate-300">Până în anul</span>
                       <input
                         type="number"
                         min={1972}
                         max={2026}
                         value={sceneEndYear}
                         onChange={(e) => setSceneEndYear(Number(e.target.value))}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-black/40 border border-white/12 text-slate-100 font-mono"
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-[#101724] border border-white/14 text-slate-100 font-mono tabular-nums focus:outline-none focus:border-amber-400"
                       />
                     </label>
                   </div>
                   {sceneDataset !== 'sentinel-1-rtc' && (
-                    <div className="flex items-center justify-between text-[11px] text-slate-300">
-                      <span>Acoperire nori max.: {sceneMaxCloud}%</span>
+                    <div className="flex items-center justify-between text-xs text-slate-200">
+                      <span className="tabular-nums">Acoperire nori max.: {sceneMaxCloud}%</span>
                       <input
                         type="range"
                         min={5}
@@ -827,7 +853,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                         step={5}
                         value={sceneMaxCloud}
                         onChange={(e) => setSceneMaxCloud(Number(e.target.value))}
-                        className="w-28 accent-amber-400"
+                        className="w-28 accent-amber-400 cursor-pointer"
                       />
                     </div>
                   )}
@@ -862,7 +888,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
             {stacResults.length > 0 && (
               <div className="space-y-2">
-                <div className="text-[11px] font-medium text-slate-400">
+                <div className="text-xs font-medium text-slate-300 tabular-nums">
                   S-au găsit {stacResults.length} scene satelitare
                 </div>
                 {stacResults.map((sc) => (
@@ -870,7 +896,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                     key={sc.id}
                     onMouseEnter={() => onHighlightFootprint(sc)}
                     onMouseLeave={() => onHighlightFootprint(null)}
-                    className="p-2.5 rounded-xl bg-white/4 hover:bg-white/8 border border-white/10 hover:border-amber-400/45 transition-colors space-y-2"
+                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/9 border border-white/12 hover:border-amber-400/50 transition-colors space-y-2"
                   >
                     <div className="flex gap-2.5">
                       {sc.previewUrl ? (
@@ -880,22 +906,24 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
-                          className="w-14 h-14 rounded-lg object-cover bg-black/50 shrink-0 border border-white/10"
+                          className="w-14 h-14 rounded-lg object-cover bg-black/50 shrink-0 border border-white/12"
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-14 h-14 rounded-lg bg-black/40 border border-white/10 flex items-center justify-center shrink-0 text-slate-500">
+                        <div className="w-14 h-14 rounded-lg bg-black/40 border border-white/12 flex items-center justify-center shrink-0 text-slate-400">
                           <Radar className="w-5 h-5" />
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-white font-mono">
+                        <div className="text-xs font-semibold text-white font-mono tabular-nums leading-snug">
                           {sc.datetime.slice(0, 10)}
                         </div>
-                        <div className="text-[11px] text-amber-300 truncate">{sc.platform}</div>
-                        <div className="text-[10px] text-slate-400 truncate font-mono">{sc.id}</div>
+                        <div className="text-xs text-amber-300 truncate leading-snug">{sc.platform}</div>
+                        <div className="text-[0.6875rem] text-slate-300/85 truncate font-mono leading-snug">
+                          {sc.id}
+                        </div>
                         {sc.cloudCover !== null && (
-                          <div className="text-[10px] text-slate-400">
+                          <div className="text-[0.6875rem] text-slate-300/85 tabular-nums leading-snug">
                             Acoperire nori: {sc.cloudCover}%
                           </div>
                         )}
@@ -905,14 +933,14 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => loadStacScene(sc, 'historical')}
-                        className="py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/45 text-[11px] font-medium text-amber-200"
+                        className="py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-xs font-medium text-amber-100 transition-colors"
                       >
                         Încarcă Stânga (Istoric)
                       </button>
                       <button
                         type="button"
                         onClick={() => loadStacScene(sc, 'current')}
-                        className="py-1 rounded-lg bg-sky-500/18 hover:bg-sky-500/28 border border-sky-400/45 text-[11px] font-medium text-sky-200"
+                        className="py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-xs font-medium text-sky-100 transition-colors"
                       >
                         Încarcă Dreapta (Actual)
                       </button>
@@ -924,7 +952,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
             {oamResults.length > 0 && (
               <div className="space-y-2">
-                <div className="text-[11px] font-medium text-slate-400">
+                <div className="text-xs font-medium text-slate-300 tabular-nums">
                   OpenAerialMap: {oamResults.length} afișate ({oamTotal ?? oamResults.length} total în zonă)
                 </div>
                 {oamResults.map((sc) => (
@@ -932,17 +960,19 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                     key={sc.id}
                     onMouseEnter={() => onHighlightFootprint(sc)}
                     onMouseLeave={() => onHighlightFootprint(null)}
-                    className="p-2.5 rounded-xl bg-white/4 hover:bg-white/8 border border-white/10 hover:border-amber-400/45 transition-colors space-y-2"
+                    className="p-2.5 rounded-xl bg-white/5 hover:bg-white/9 border border-white/12 hover:border-amber-400/50 transition-colors space-y-2"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <div className="text-xs font-semibold text-white truncate">{sc.title}</div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-xs font-semibold text-white truncate leading-snug">
+                          {sc.title}
+                        </div>
+                        <div className="text-[0.6875rem] text-slate-300 leading-snug">
                           {sc.date || 'Fără dată'} · {sc.provider}
                         </div>
                       </div>
                       {sc.gsdM !== null && (
-                        <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 border border-emerald-500/30 text-emerald-300">
+                        <span className="shrink-0 text-[0.6875rem] font-mono tabular-nums px-1.5 py-0.5 rounded bg-emerald-500/18 border border-emerald-500/35 text-emerald-200">
                           {Math.round(sc.gsdM * 100)} cm
                         </span>
                       )}
@@ -951,14 +981,14 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                       <button
                         type="button"
                         onClick={() => loadOamScene(sc, 'historical')}
-                        className="py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/45 text-[11px] font-medium text-amber-200"
+                        className="py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400/50 text-xs font-medium text-amber-100 transition-colors"
                       >
                         Încarcă Stânga
                       </button>
                       <button
                         type="button"
                         onClick={() => loadOamScene(sc, 'current')}
-                        className="py-1 rounded-lg bg-sky-500/18 hover:bg-sky-500/28 border border-sky-400/45 text-[11px] font-medium text-sky-200"
+                        className="py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/50 text-xs font-medium text-sky-100 transition-colors"
                       >
                         Încarcă Dreapta
                       </button>
@@ -972,7 +1002,7 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
 
         {activeTab === 'landmarks' && (
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {(
                 [
                   { id: 'all', label: 'Toate (12)' },
@@ -986,10 +1016,10 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                   key={cat.id}
                   type="button"
                   onClick={() => setLandmarkFilter(cat.id)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-colors ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
                     landmarkFilter === cat.id
-                      ? 'bg-amber-500/22 border-amber-400/60 text-amber-200'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
+                      ? 'bg-amber-500/22 border-amber-400/65 text-amber-100'
+                      : 'bg-white/6 border-white/12 text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   {cat.label}
@@ -1003,21 +1033,21 @@ export const LeftDrawer: React.FC<LeftDrawerProps> = ({
                   key={lm.id}
                   type="button"
                   onClick={() => onSelectLandmark(lm)}
-                  className="w-full text-left p-3 rounded-xl bg-white/4 hover:bg-white/9 border border-white/10 hover:border-amber-400/50 transition-all space-y-1.5 group"
+                  className="w-full text-left p-3 rounded-xl bg-white/5 hover:bg-white/9 border border-white/12 hover:border-amber-400/55 transition-all space-y-1.5 group"
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="text-xs font-semibold text-white group-hover:text-amber-200 transition-colors flex items-center gap-1.5">
+                    <div className="font-[var(--font-display)] text-[0.8125rem] font-semibold text-white group-hover:text-amber-200 transition-colors flex items-center gap-1.5 leading-snug">
                       <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                       <span>{lm.name}</span>
                     </div>
-                    <span className="shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300">
+                    <span className="shrink-0 text-[0.6875rem] font-mono tabular-nums px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/35 text-amber-200">
                       {lm.spanLabel}
                     </span>
                   </div>
-                  <div className="text-[10px] uppercase tracking-wider text-sky-300/85 font-medium">
+                  <div className="text-[0.6875rem] uppercase tracking-[0.05em] text-sky-300 font-medium">
                     {lm.region}
                   </div>
-                  <p className="text-[11px] text-slate-300/90 leading-relaxed">{lm.summary}</p>
+                  <p className="text-xs text-slate-200/90 leading-[1.45] text-pretty">{lm.summary}</p>
                 </button>
               ))}
             </div>

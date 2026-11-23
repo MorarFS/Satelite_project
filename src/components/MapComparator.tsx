@@ -31,6 +31,7 @@ interface MapComparatorProps {
   flyTrigger: number;
   onViewportChange: (center: [number, number], zoom: number, bbox: [number, number, number, number]) => void;
   onCursorCoords: (coords: { lat: number; lon: number } | null) => void;
+  onMapClick?: () => void;
   highlightedFootprint: StacScene | OamScene | null;
   onHistoricalLoadStateChange?: (loading: boolean, error: string | null) => void;
   onHistoricalFrameReady?: (specId: string) => void;
@@ -56,6 +57,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
   flyTrigger,
   onViewportChange,
   onCursorCoords,
+  onMapClick,
   highlightedFootprint,
   onHistoricalLoadStateChange,
   onHistoricalFrameReady,
@@ -98,6 +100,8 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
   const isDraggingSplitRef = useRef(false);
 
   // Store latest dynamic props in refs for Leaflet event listeners
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
   const clearDivideRef = useRef(clearDivide);
   clearDivideRef.current = clearDivide;
   const splitPercentRef = useRef(splitPercent);
@@ -286,6 +290,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
 
     map.on('mouseout', () => onCursorCoords(null));
     map.on('click', (e: L.LeafletMouseEvent) => {
+      onMapClickRef.current?.();
       if (comparisonModeRef.current === 'spyglass') {
         const pt = map.latLngToContainerPoint(e.latlng);
         setSpyglassPos({ x: pt.x, y: pt.y });
@@ -498,6 +503,12 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
     rightMap.on('mouseout', () => {
       onCursorCoords(null);
       if (leftMap.hasLayer(lCross)) leftMap.removeLayer(lCross);
+    });
+    leftMap.on('click', () => {
+      onMapClickRef.current?.();
+    });
+    rightMap.on('click', () => {
+      onMapClickRef.current?.();
     });
 
     leftMapRef.current = leftMap;
@@ -942,9 +953,9 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
         <div className="relative w-full h-full">
           <div ref={leftContainerRef} className="w-full h-full" />
           <div
-            className={`pointer-events-none absolute top-[76px] ${
+            className={`pointer-events-none select-none absolute top-[4.75rem] ${
               clearDivide ? 'left-1/2 -translate-x-1/2' : 'right-4'
-            } z-[500] px-3 py-1 rounded-full bg-[#090d12]/85 border border-amber-500/40 backdrop-blur-md text-xs font-medium text-amber-200 shadow-lg flex items-center gap-2 whitespace-nowrap`}
+            } z-[500] px-3 py-1 rounded-full obs-pill border-amber-500/40 text-xs font-medium tabular-nums text-amber-200 flex items-center gap-2 whitespace-nowrap`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-400" />
             <span>ISTORIC · {historicalSpec.dateLabel}</span>
@@ -952,7 +963,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
         </div>
         <div className={`relative w-full h-full ${clearDivide ? 'hidden' : ''}`}>
           <div ref={rightContainerRef} className="w-full h-full" />
-          <div className="pointer-events-none absolute top-[76px] left-4 z-[500] px-3 py-1 rounded-full bg-[#090d12]/85 border border-sky-400/40 backdrop-blur-md text-xs font-medium text-sky-200 shadow-lg flex items-center gap-2 whitespace-nowrap">
+          <div className="pointer-events-none select-none absolute top-[4.75rem] left-4 z-[500] px-3 py-1 rounded-full obs-pill border-sky-400/40 text-xs font-medium tabular-nums text-sky-200 flex items-center gap-2 whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-sky-400" />
             <span>ACTUAL · {currentSpec.dateLabel}</span>
           </div>
@@ -966,7 +977,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
       <div ref={singleContainerRef} className="w-full h-full" />
 
       {clearDivide && (
-        <div className="pointer-events-none absolute top-[76px] left-1/2 -translate-x-1/2 z-[475] px-3 py-1 rounded-full bg-[#090d12]/85 border border-amber-500/40 backdrop-blur-md text-xs font-medium text-amber-200 shadow-lg flex items-center gap-2 whitespace-nowrap">
+        <div className="pointer-events-none select-none absolute top-[4.75rem] left-1/2 -translate-x-1/2 z-[475] px-3 py-1 rounded-full obs-pill border-amber-500/40 text-xs font-medium tabular-nums text-amber-200 flex items-center gap-2 whitespace-nowrap">
           <span className="w-2 h-2 rounded-full bg-amber-400" />
           <span>ISTORIC · {historicalSpec.dateLabel}</span>
         </div>
@@ -988,7 +999,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
               isDraggingSplitRef.current = true;
             }}
             style={{ left: `${splitPercent}%` }}
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-[490] w-10 h-10 rounded-full bg-[#0d131d]/95 border border-white/25 hover:border-amber-400/80 shadow-[0_6px_24px_rgba(0,0,0,0.65)] backdrop-blur-md flex items-center justify-center cursor-ew-resize transition-colors group"
+            className="select-none absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-[490] w-10 h-10 rounded-full obs-pill border-white/25 hover:border-amber-400/80 flex items-center justify-center cursor-ew-resize transition-colors group"
           >
             <div className="flex items-center gap-1">
               <span className="w-0 h-0 border-y-[5px] border-y-transparent border-r-[6px] border-r-amber-400" />
@@ -998,12 +1009,12 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
           </button>
 
           {/* Left / Right corner callouts */}
-          <div className="pointer-events-none absolute top-[76px] left-1/2 -translate-x-1/2 z-[475] flex items-center gap-2">
-            <div className="px-2.5 py-1 rounded-full bg-[#090d12]/80 border border-amber-500/35 backdrop-blur-md text-[11px] font-medium text-amber-200 flex items-center gap-1.5 whitespace-nowrap">
+          <div className="pointer-events-none select-none absolute top-[4.75rem] left-1/2 -translate-x-1/2 z-[475] flex items-center gap-2">
+            <div className="px-2.5 py-1 rounded-full obs-pill border-amber-500/35 text-xs font-medium tabular-nums text-amber-200 flex items-center gap-1.5 whitespace-nowrap">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               <span>Stânga: {historicalSpec.shortLabel}</span>
             </div>
-            <div className="px-2.5 py-1 rounded-full bg-[#090d12]/80 border border-sky-400/35 backdrop-blur-md text-[11px] font-medium text-sky-200 flex items-center gap-1.5 whitespace-nowrap">
+            <div className="px-2.5 py-1 rounded-full obs-pill border-sky-400/35 text-xs font-medium tabular-nums text-sky-200 flex items-center gap-1.5 whitespace-nowrap">
               <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
               <span>Dreapta: {currentSpec.shortLabel}</span>
             </div>
@@ -1014,7 +1025,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
       {comparisonMode === 'spyglass' && !clearDivide && (
         <>
           <div
-            className="pointer-events-none absolute z-[480] rounded-full border-2 border-amber-400/90 shadow-[0_0_32px_rgba(0,0,0,0.65),inset_0_0_24px_rgba(245,158,11,0.18)]"
+            className="pointer-events-none select-none absolute z-[480] rounded-full border-2 border-amber-400/90 shadow-[0_0_32px_rgba(0,0,0,0.65),inset_0_0_24px_rgba(245,158,11,0.18)]"
             style={{
               width: spyglassRadius * 2,
               height: spyglassRadius * 2,
@@ -1022,7 +1033,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
               top: effectiveSpyglassPos.y - spyglassRadius,
             }}
           >
-            <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full bg-[#090d12]/90 border border-amber-500/40 text-[10px] font-mono text-amber-200">
+            <div className="absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap px-2.5 py-0.5 rounded-full obs-pill border-amber-500/40 text-[0.6875rem] font-mono tabular-nums text-amber-200">
               {historicalSpec.shortLabel} · {spyglassLocked ? 'BLOCATĂ (clic pt. mutare)' : 'Clic pt. blocare lupă'}
             </div>
           </div>
