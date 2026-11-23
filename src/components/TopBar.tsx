@@ -171,11 +171,11 @@ export const TopBar: React.FC<TopBarProps> = ({
           className={`select-none inline-flex items-center gap-1.5 px-2.5 py-1.5 min-h-[2.125rem] rounded-xl border text-xs font-medium transition-colors shrink-0 focus-visible:outline-2 focus-visible:outline-amber-400 focus-visible:outline-offset-2 ${
             drawerOpen
               ? 'bg-amber-500/22 border-amber-400/55 text-amber-200 shadow-[0_0_16px_rgba(245,158,11,0.18)]'
-              : 'bg-white/6 border-white/14 text-slate-200 hover:text-white hover:bg-white/12 hover:border-amber-400/40'
+              : 'obs-arhive-cta hover:bg-amber-500/22 hover:border-amber-300'
           }`}
         >
           <PanelLeft className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Arhive</span>
+          <span className={drawerOpen ? '' : 'obs-arhive-cta-word'}>Arhive</span>
         </button>
 
         <div className="flex items-center gap-2 pr-2 border-r border-white/10 shrink-0 select-none">

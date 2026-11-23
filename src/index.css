@@ -314,3 +314,46 @@
     animation-range: 0 var(--fade-size), calc(100% - var(--fade-size)) 100%;
   }
 }
+
+/* Eye-catching amber blink/pulse on collapsed Arhive toggle CTA (< 1 Hz, reduced-motion opt-in) */
+@keyframes obs-arhive-word-blink {
+  0%, 100% {
+    opacity: 1;
+    color: #fde68a;
+    text-shadow: 0 0 12px rgba(251, 191, 36, 0.75);
+  }
+  50% {
+    opacity: 0.35;
+    color: #fbbf24;
+    text-shadow: 0 0 2px rgba(251, 191, 36, 0.15);
+  }
+}
+
+@keyframes obs-arhive-btn-pulse {
+  0%, 100% {
+    border-color: rgba(251, 191, 36, 0.72);
+    box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.32), 0 0 18px rgba(245, 158, 11, 0.28);
+  }
+  50% {
+    border-color: rgba(251, 191, 36, 0.25);
+    box-shadow: 0 0 0 4px rgba(251, 191, 36, 0), 0 0 6px rgba(245, 158, 11, 0.08);
+  }
+}
+
+.obs-arhive-cta {
+  border-color: rgba(251, 191, 36, 0.55);
+  background: rgba(245, 158, 11, 0.14);
+  color: #fde68a;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: obs-arhive-btn-pulse 1.6s ease-in-out infinite;
+  }
+}
+
+.obs-arhive-cta-word {
+  font-weight: 600;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: obs-arhive-word-blink 1.6s ease-in-out infinite;
+  }
+}
