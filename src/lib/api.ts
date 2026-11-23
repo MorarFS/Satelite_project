@@ -101,6 +101,12 @@ export async function fetchWaybackConfig(): Promise<WaybackRelease[]> {
   return store.releases;
 }
 
+export function getWaybackTileKey(lat: number, lon: number, zoom: number): string {
+  const z = Math.max(12, Math.min(17, Math.round(zoom) || 14));
+  const { x, y } = latLonToTile(lat, lon, z);
+  return `${z}/${x}/${y}`;
+}
+
 export async function fetchWaybackChanges(
   lat: number,
   lon: number,
@@ -108,7 +114,7 @@ export async function fetchWaybackChanges(
 ): Promise<{ zoom: number; totalReleases: number; changes: WaybackRelease[] }> {
   const z = Math.max(12, Math.min(17, Math.round(zoom) || 14));
   const { x, y } = latLonToTile(lat, lon, z);
-  const key = `${z}/${x}/${y}`;
+  const key = getWaybackTileKey(lat, lon, zoom);
   const existing = changesCache.get(key);
   if (existing) return existing;
 

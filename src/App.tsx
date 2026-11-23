@@ -12,7 +12,12 @@ import {
   TIMELAPSE_TRACKS,
   waybackReleaseToSpec,
 } from './data/presets';
-import { fetchWaybackChanges, fetchWaybackConfig, fetchWaybackMetadata } from './lib/api';
+import {
+  fetchWaybackChanges,
+  fetchWaybackConfig,
+  fetchWaybackMetadata,
+  getWaybackTileKey,
+} from './lib/api';
 import type {
   ComparisonMode,
   ImageryLayerSpec,
@@ -93,6 +98,9 @@ export function App() {
   const [localWaybackChanges, setLocalWaybackChanges] = useState<WaybackRelease[] | null>(null);
   const [loadingChanges, setLoadingChanges] = useState(false);
   const changesReqRef = useRef(0);
+  const viewportRef = useRef({ center, zoom });
+  viewportRef.current = { center, zoom };
+  const waybackTileKey = getWaybackTileKey(center[0], center[1], zoom);
 
   const [historicalMeta, setHistoricalMeta] = useState<WaybackMetadata | null>(null);
   const [currentMeta, setCurrentMeta] = useState<WaybackMetadata | null>(null);
@@ -177,8 +185,9 @@ export function App() {
     if (localWaybackChanges) return;
     const reqId = ++changesReqRef.current;
     let cancelled = false;
+    const { center: activeCenter, zoom: activeZoom } = viewportRef.current;
     setLoadingChanges(true);
-    fetchWaybackChanges(center[0], center[1], zoom)
+    fetchWaybackChanges(activeCenter[0], activeCenter[1], activeZoom)
       .then((res) => {
         if (cancelled || reqId !== changesReqRef.current) return;
         setLocalWaybackChanges(res.changes);
@@ -197,7 +206,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [timelapseTrack, localWaybackChanges, center, zoom]);
+  }, [timelapseTrack, localWaybackChanges, waybackTileKey]);
 
   // Sync URL query params
   useEffect(() => {
