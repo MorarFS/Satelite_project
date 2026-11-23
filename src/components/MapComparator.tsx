@@ -18,6 +18,7 @@ interface MapComparatorProps {
   nextPreloadSpec?: ImageryLayerSpec | null;
   nextPreloadSpectral?: SpectralMode;
   comparisonMode: ComparisonMode;
+  clearDivide: boolean;
   splitPercent: number;
   onSplitPercentChange: (pct: number) => void;
   fadeOpacity: number;
@@ -42,6 +43,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
   nextPreloadSpec,
   nextPreloadSpectral,
   comparisonMode,
+  clearDivide,
   splitPercent,
   onSplitPercentChange,
   fadeOpacity,
@@ -77,10 +79,16 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
   const leftPreloadLayerRef = useRef<L.Layer | null>(null);
   const rightCurrLayerRef = useRef<L.Layer | null>(null);
   const rightOverlayRef = useRef<L.LayerGroup | null>(null);
+  const leftOverlayRef = useRef<L.LayerGroup | null>(null);
   const leftBorderRef = useRef<L.GeoJSON | null>(null);
   const rightBorderRef = useRef<L.GeoJSON | null>(null);
   const leftCrosshairRef = useRef<L.CircleMarker | null>(null);
   const rightCrosshairRef = useRef<L.CircleMarker | null>(null);
+  const leftZoomCtrlRef = useRef<L.Control.Zoom | null>(null);
+  const leftScaleCtrlRef = useRef<L.Control.Scale | null>(null);
+  const rightZoomCtrlRef = useRef<L.Control.Zoom | null>(null);
+  const rightScaleCtrlRef = useRef<L.Control.Scale | null>(null);
+  const dualControlsOnLeftRef = useRef<boolean | null>(null);
   const syncingDualRef = useRef(false);
   const histZIndexRef = useRef(10);
   const histSwapTokenRef = useRef(0);
@@ -90,6 +98,8 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
   const isDraggingSplitRef = useRef(false);
 
   // Store latest dynamic props in refs for Leaflet event listeners
+  const clearDivideRef = useRef(clearDivide);
+  clearDivideRef.current = clearDivide;
   const splitPercentRef = useRef(splitPercent);
   splitPercentRef.current = splitPercent;
   const comparisonModeRef = useRef(comparisonMode);
@@ -118,6 +128,23 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
     const nw = map.containerPointToLayerPoint([0, 0]);
     const se = map.containerPointToLayerPoint([w, h]);
     const mode = comparisonModeRef.current;
+
+    if (clearDivideRef.current) {
+      histPane.style.zIndex = '265';
+      histPane.style.opacity = '1';
+      histPane.style.clipPath = 'none';
+
+      currPane.style.zIndex = '250';
+      currPane.style.opacity = '0';
+      currPane.style.clipPath = 'none';
+
+      if (currLabelsPane) {
+        currLabelsPane.style.zIndex = '270';
+        currLabelsPane.style.opacity = '1';
+        currLabelsPane.style.clipPath = 'none';
+      }
+      return;
+    }
 
     if (mode === 'split') {
       histPane.style.zIndex = '250';
@@ -304,10 +331,16 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
       leftPreloadLayerRef.current = null;
       rightCurrLayerRef.current = null;
       rightOverlayRef.current = null;
+      leftOverlayRef.current = null;
       leftBorderRef.current = null;
       rightBorderRef.current = null;
       leftCrosshairRef.current = null;
       rightCrosshairRef.current = null;
+      leftZoomCtrlRef.current = null;
+      leftScaleCtrlRef.current = null;
+      rightZoomCtrlRef.current = null;
+      rightScaleCtrlRef.current = null;
+      dualControlsOnLeftRef.current = null;
       return;
     }
 
@@ -331,14 +364,34 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
       zoomControl: false,
       preferCanvas: true,
     });
-    L.control.zoom({ position: 'topright' }).addTo(rightMap);
-    L.control.scale({ position: 'bottomright', imperial: false }).addTo(rightMap);
+
+    const leftZoom = L.control.zoom({ position: 'topright' });
+    const leftScale = L.control.scale({ position: 'bottomright', imperial: false });
+    const rightZoom = L.control.zoom({ position: 'topright' });
+    const rightScale = L.control.scale({ position: 'bottomright', imperial: false });
+    leftZoomCtrlRef.current = leftZoom;
+    leftScaleCtrlRef.current = leftScale;
+    rightZoomCtrlRef.current = rightZoom;
+    rightScaleCtrlRef.current = rightScale;
+
+    if (clearDivideRef.current) {
+      leftZoom.addTo(leftMap);
+      leftScale.addTo(leftMap);
+      dualControlsOnLeftRef.current = true;
+    } else {
+      rightZoom.addTo(rightMap);
+      rightScale.addTo(rightMap);
+      dualControlsOnLeftRef.current = false;
+    }
 
     const leftPreloadPane = leftMap.createPane('preloadPane');
     leftPreloadPane.style.zIndex = '100';
     leftPreloadPane.style.opacity = '0.001';
     leftPreloadPane.style.pointerEvents = 'none';
     leftMap.createPane('historicalPane').style.zIndex = '250';
+    const lLabelsPane = leftMap.createPane('leftLabelsPane');
+    lLabelsPane.style.zIndex = '270';
+    lLabelsPane.style.pointerEvents = 'none';
     leftMap.createPane('overlayPaneCustom').style.zIndex = '460';
     rightMap.createPane('currentPane').style.zIndex = '250';
     const rLabelsPane = rightMap.createPane('currentLabelsPane');
@@ -362,6 +415,12 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
     }
     leftBorderRef.current = lBorder;
     rightBorderRef.current = rBorder;
+
+    const lOv = createReferenceOverlayGroup('leftLabelsPane');
+    if (clearDivideRef.current && showLabelsOverlay) {
+      lOv.addTo(leftMap);
+    }
+    leftOverlayRef.current = lOv;
 
     const rOv = createReferenceOverlayGroup('currentLabelsPane');
     if (showLabelsOverlay) {
@@ -404,19 +463,30 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
       ]);
     };
 
-    leftMap.on('move', () => syncFrom(leftMap, rightMap));
-    rightMap.on('move', () => syncFrom(rightMap, leftMap));
+    leftMap.on('move', () => {
+      if (!clearDivideRef.current) syncFrom(leftMap, rightMap);
+    });
+    rightMap.on('move', () => {
+      if (!clearDivideRef.current) syncFrom(rightMap, leftMap);
+    });
     leftMap.on('moveend', emitDualState);
-    rightMap.on('moveend', emitDualState);
+    rightMap.on('moveend', () => {
+      if (!clearDivideRef.current && !syncingDualRef.current) emitDualState();
+    });
 
     leftMap.on('mousemove', (e: L.LeafletMouseEvent) => {
       onCursorCoords({ lat: e.latlng.lat, lon: e.latlng.lng });
+      if (clearDivideRef.current) {
+        if (rightMap.hasLayer(rCross)) rightMap.removeLayer(rCross);
+        return;
+      }
       rCross.setLatLng(e.latlng);
       if (!rightMap.hasLayer(rCross)) rCross.addTo(rightMap);
       if (leftMap.hasLayer(lCross)) leftMap.removeLayer(lCross);
     });
     rightMap.on('mousemove', (e: L.LeafletMouseEvent) => {
       onCursorCoords({ lat: e.latlng.lat, lon: e.latlng.lng });
+      if (clearDivideRef.current) return;
       lCross.setLatLng(e.latlng);
       if (!leftMap.hasLayer(lCross)) lCross.addTo(leftMap);
       if (rightMap.hasLayer(rCross)) rightMap.removeLayer(rCross);
@@ -436,7 +506,9 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
 
     const resizeObs = new ResizeObserver(() => {
       leftMap.invalidateSize({ animate: false });
-      rightMap.invalidateSize({ animate: false });
+      if (!clearDivideRef.current) {
+        rightMap.invalidateSize({ animate: false });
+      }
     });
     resizeObs.observe(leftEl);
     resizeObs.observe(rightEl);
@@ -451,17 +523,76 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
       leftPreloadLayerRef.current = null;
       rightCurrLayerRef.current = null;
       rightOverlayRef.current = null;
+      leftOverlayRef.current = null;
       leftBorderRef.current = null;
       rightBorderRef.current = null;
+      leftCrosshairRef.current = null;
+      rightCrosshairRef.current = null;
+      leftZoomCtrlRef.current = null;
+      leftScaleCtrlRef.current = null;
+      rightZoomCtrlRef.current = null;
+      rightScaleCtrlRef.current = null;
+      dualControlsOnLeftRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [comparisonMode === 'side-by-side']);
 
-  // Keep pane styles reactive to split/spyglass/fade updates
+  // Keep pane styles reactive to split/spyglass/fade/clearDivide updates
   useEffect(() => {
     updateSinglePaneStyles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [comparisonMode, splitPercent, spyglassPos, spyglassRadius, fadeOpacity, blinkToCurrent]);
+  }, [comparisonMode, clearDivide, splitPercent, spyglassPos, spyglassRadius, fadeOpacity, blinkToCurrent]);
+
+  // Sync dual-mode clearDivide layout, controls, labels overlay, and viewport sizes
+  useEffect(() => {
+    if (comparisonMode !== 'side-by-side') return;
+    const leftMap = leftMapRef.current;
+    const rightMap = rightMapRef.current;
+    if (!leftMap || !rightMap) return;
+
+    if (dualControlsOnLeftRef.current !== clearDivide) {
+      if (clearDivide) {
+        rightZoomCtrlRef.current?.remove();
+        rightScaleCtrlRef.current?.remove();
+        leftZoomCtrlRef.current?.addTo(leftMap);
+        leftScaleCtrlRef.current?.addTo(leftMap);
+      } else {
+        leftZoomCtrlRef.current?.remove();
+        leftScaleCtrlRef.current?.remove();
+        rightZoomCtrlRef.current?.addTo(rightMap);
+        rightScaleCtrlRef.current?.addTo(rightMap);
+      }
+      dualControlsOnLeftRef.current = clearDivide;
+    }
+
+    if (leftOverlayRef.current) {
+      if (clearDivide && showLabelsOverlay) {
+        if (!leftMap.hasLayer(leftOverlayRef.current)) {
+          leftOverlayRef.current.addTo(leftMap);
+        }
+      } else if (leftMap.hasLayer(leftOverlayRef.current)) {
+        leftMap.removeLayer(leftOverlayRef.current);
+      }
+    }
+
+    if (clearDivide && rightCrosshairRef.current && rightMap.hasLayer(rightCrosshairRef.current)) {
+      rightMap.removeLayer(rightCrosshairRef.current);
+    }
+
+    const rafId = window.requestAnimationFrame(() => {
+      leftMap.invalidateSize({ animate: false });
+      if (!clearDivide) {
+        syncingDualRef.current = true;
+        rightMap.invalidateSize({ animate: false });
+        rightMap.setView(leftMap.getCenter(), leftMap.getZoom(), { animate: false });
+        syncingDualRef.current = false;
+      }
+    });
+
+    return () => {
+      window.cancelAnimationFrame(rafId);
+    };
+  }, [clearDivide, showLabelsOverlay, comparisonMode]);
 
   // Programmatic flyTo when user searches or selects a landmark
   useEffect(() => {
@@ -469,13 +600,17 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
     if (singleMapRef.current) {
       singleMapRef.current.flyTo(center, zoom, { duration: 1.0 });
     }
-    if (leftMapRef.current && rightMapRef.current) {
-      syncingDualRef.current = true;
-      leftMapRef.current.setView(center, zoom, { animate: true });
-      rightMapRef.current.setView(center, zoom, { animate: true });
-      setTimeout(() => {
-        syncingDualRef.current = false;
-      }, 250);
+    if (leftMapRef.current) {
+      if (rightMapRef.current && !clearDivideRef.current) {
+        syncingDualRef.current = true;
+        leftMapRef.current.setView(center, zoom, { animate: true });
+        rightMapRef.current.setView(center, zoom, { animate: true });
+        setTimeout(() => {
+          syncingDualRef.current = false;
+        }, 250);
+      } else {
+        leftMapRef.current.flyTo(center, zoom, { duration: 1.0 });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flyTrigger]);
@@ -799,15 +934,23 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
 
   if (comparisonMode === 'side-by-side') {
     return (
-      <div className="relative w-full h-full grid grid-cols-2 gap-[2px] bg-slate-800/80">
+      <div
+        className={`relative w-full h-full grid ${
+          clearDivide ? 'grid-cols-1 gap-0' : 'grid-cols-2 gap-[2px]'
+        } bg-slate-800/80`}
+      >
         <div className="relative w-full h-full">
           <div ref={leftContainerRef} className="w-full h-full" />
-          <div className="pointer-events-none absolute top-[76px] right-4 z-[500] px-3 py-1 rounded-full bg-[#090d12]/85 border border-amber-500/40 backdrop-blur-md text-xs font-medium text-amber-200 shadow-lg flex items-center gap-2 whitespace-nowrap">
+          <div
+            className={`pointer-events-none absolute top-[76px] ${
+              clearDivide ? 'left-1/2 -translate-x-1/2' : 'right-4'
+            } z-[500] px-3 py-1 rounded-full bg-[#090d12]/85 border border-amber-500/40 backdrop-blur-md text-xs font-medium text-amber-200 shadow-lg flex items-center gap-2 whitespace-nowrap`}
+          >
             <span className="w-2 h-2 rounded-full bg-amber-400" />
             <span>ISTORIC · {historicalSpec.dateLabel}</span>
           </div>
         </div>
-        <div className="relative w-full h-full">
+        <div className={`relative w-full h-full ${clearDivide ? 'hidden' : ''}`}>
           <div ref={rightContainerRef} className="w-full h-full" />
           <div className="pointer-events-none absolute top-[76px] left-4 z-[500] px-3 py-1 rounded-full bg-[#090d12]/85 border border-sky-400/40 backdrop-blur-md text-xs font-medium text-sky-200 shadow-lg flex items-center gap-2 whitespace-nowrap">
             <span className="w-2 h-2 rounded-full bg-sky-400" />
@@ -822,7 +965,14 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
     <div className="relative w-full h-full overflow-hidden">
       <div ref={singleContainerRef} className="w-full h-full" />
 
-      {comparisonMode === 'split' && (
+      {clearDivide && (
+        <div className="pointer-events-none absolute top-[76px] left-1/2 -translate-x-1/2 z-[475] px-3 py-1 rounded-full bg-[#090d12]/85 border border-amber-500/40 backdrop-blur-md text-xs font-medium text-amber-200 shadow-lg flex items-center gap-2 whitespace-nowrap">
+          <span className="w-2 h-2 rounded-full bg-amber-400" />
+          <span>ISTORIC · {historicalSpec.dateLabel}</span>
+        </div>
+      )}
+
+      {comparisonMode === 'split' && !clearDivide && (
         <>
           {/* Vertical glowing divider line */}
           <div
@@ -861,7 +1011,7 @@ export const MapComparator: React.FC<MapComparatorProps> = ({
         </>
       )}
 
-      {comparisonMode === 'spyglass' && (
+      {comparisonMode === 'spyglass' && !clearDivide && (
         <>
           <div
             className="pointer-events-none absolute z-[480] rounded-full border-2 border-amber-400/90 shadow-[0_0_32px_rgba(0,0,0,0.65),inset_0_0_24px_rgba(245,158,11,0.18)]"

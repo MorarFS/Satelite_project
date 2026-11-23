@@ -45,7 +45,7 @@ function getInitialFromUrl() {
   const mode: ComparisonMode =
     modeParam && ['split', 'side-by-side', 'spyglass', 'fade'].includes(modeParam)
       ? modeParam
-      : 'split';
+      : 'side-by-side';
 
   return {
     center: [
@@ -76,8 +76,7 @@ export function App() {
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>(initRef.current.mode);
 
   const [splitPercent, setSplitPercent] = useState(50);
-  const savedSplitRef = useRef(50);
-  const [timelapseFullScreen, setTimelapseFullScreen] = useState(false);
+  const [clearDivide, setClearDivide] = useState(false);
 
   const [fadeOpacity, setFadeOpacity] = useState(0.95);
   const [blinkToCurrent, setBlinkToCurrent] = useState(false);
@@ -409,18 +408,6 @@ export function App() {
     setTimelapseSpeed((s) => (s === 1 ? 2 : s === 2 ? 0.5 : 1));
   };
 
-  const handleToggleTimelapseFullScreen = () => {
-    setTimelapseFullScreen((prev) => {
-      if (!prev) {
-        savedSplitRef.current = splitPercent;
-        setSplitPercent(96);
-        return true;
-      }
-      setSplitPercent(savedSplitRef.current < 90 ? savedSplitRef.current : 50);
-      return false;
-    });
-  };
-
   const activeTrackMeta = TIMELAPSE_TRACKS.find((t) => t.id === timelapseTrack);
   const framePosition = activeSequenceIdx >= 0 ? activeSequenceIdx + 1 : 1;
   const progressPct =
@@ -436,13 +423,9 @@ export function App() {
         nextPreloadSpec={nextPreloadSpec}
         nextPreloadSpectral={nextPreloadSpectral}
         comparisonMode={comparisonMode}
+        clearDivide={clearDivide}
         splitPercent={splitPercent}
-        onSplitPercentChange={(pct) => {
-          setSplitPercent(pct);
-          if (timelapseFullScreen && pct < 90) {
-            setTimelapseFullScreen(false);
-          }
-        }}
+        onSplitPercentChange={setSplitPercent}
         fadeOpacity={fadeOpacity}
         blinkToCurrent={blinkToCurrent}
         spyglassRadius={spyglassRadius}
@@ -467,7 +450,10 @@ export function App() {
         }}
         onSearchActiveChange={setSearchActive}
         comparisonMode={comparisonMode}
-        onComparisonModeChange={setComparisonMode}
+        onComparisonModeChange={(mode) => {
+          setComparisonMode(mode);
+          setClearDivide(false);
+        }}
         fadeOpacity={fadeOpacity}
         onFadeOpacityChange={setFadeOpacity}
         blinkToCurrent={blinkToCurrent}
@@ -568,9 +554,8 @@ export function App() {
         onTimelapseTrackChange={handleTimelapseTrackChange}
         timelapseSpeed={timelapseSpeed}
         onCycleSpeed={handleCycleSpeed}
-        comparisonMode={comparisonMode}
-        timelapseFullScreen={timelapseFullScreen}
-        onToggleTimelapseFullScreen={handleToggleTimelapseFullScreen}
+        clearDivide={clearDivide}
+        onToggleClearDivide={() => setClearDivide((v) => !v)}
         loadingWaybackTrack={loadingChanges && timelapseTrack === 'wayback-local'}
         center={center}
         zoom={zoom}

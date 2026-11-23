@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { TIMELAPSE_TRACKS } from '../data/presets';
 import type {
-  ComparisonMode,
   ImageryLayerSpec,
   TimelapseSpeed,
   TimelapseTrackId,
@@ -29,9 +28,8 @@ interface TimelineDockProps {
   onTimelapseTrackChange: (track: TimelapseTrackId) => void;
   timelapseSpeed: TimelapseSpeed;
   onCycleSpeed: () => void;
-  comparisonMode: ComparisonMode;
-  timelapseFullScreen: boolean;
-  onToggleTimelapseFullScreen: () => void;
+  clearDivide: boolean;
+  onToggleClearDivide: () => void;
   loadingWaybackTrack: boolean;
   center: [number, number];
   zoom: number;
@@ -53,9 +51,8 @@ export const TimelineDock: React.FC<TimelineDockProps> = ({
   onTimelapseTrackChange,
   timelapseSpeed,
   onCycleSpeed,
-  comparisonMode,
-  timelapseFullScreen,
-  onToggleTimelapseFullScreen,
+  clearDivide,
+  onToggleClearDivide,
   loadingWaybackTrack,
   center,
   zoom,
@@ -199,34 +196,33 @@ export const TimelineDock: React.FC<TimelineDockProps> = ({
               <span>{speedLabel}</span>
             </button>
 
-            {comparisonMode === 'split' && (
-              <button
-                type="button"
-                onClick={onToggleTimelapseFullScreen}
-                title={
-                  timelapseFullScreen
-                    ? 'Revino la comparația 50/50 cu prezentul'
-                    : 'Extinde istoria pe tot ecranul pentru timelapse'
-                }
-                className={`px-2 py-1.5 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-colors ${
-                  timelapseFullScreen
-                    ? 'bg-amber-500/22 border-amber-400/60 text-amber-100'
-                    : 'bg-white/6 hover:bg-white/12 border-white/10 text-slate-300'
-                }`}
-              >
-                {timelapseFullScreen ? (
-                  <>
-                    <Minimize2 className="w-3 h-3" />
-                    <span className="hidden md:inline">50/50</span>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 className="w-3 h-3" />
-                    <span className="hidden md:inline">Tot ecranul</span>
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={onToggleClearDivide}
+              aria-pressed={clearDivide}
+              title={
+                clearDivide
+                  ? 'Reafișează separatorul și comparația cu prezentul'
+                  : 'Ascunde separatorul pentru timelapse pe tot ecranul'
+              }
+              className={`px-2 py-1.5 rounded-lg border text-[11px] font-medium flex items-center gap-1 transition-colors ${
+                clearDivide
+                  ? 'bg-amber-500/22 border-amber-400/60 text-amber-100'
+                  : 'bg-white/6 hover:bg-white/12 border-white/10 text-slate-300'
+              }`}
+            >
+              {clearDivide ? (
+                <>
+                  <Minimize2 className="w-3 h-3" />
+                  <span className="hidden md:inline">Cu separator</span>
+                </>
+              ) : (
+                <>
+                  <Maximize2 className="w-3 h-3" />
+                  <span className="hidden md:inline">Fără separator</span>
+                </>
+              )}
+            </button>
           </div>
 
           <div className="flex-1 overflow-x-auto obs-scroll flex items-center gap-1 py-0.5">
